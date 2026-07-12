@@ -36,9 +36,9 @@ Current browser automation is centered on persistent per-account Chromium profil
 
 ## Interface Preview
 
-The screenshot below is captured from the real English app UI and sanitized with demo account names before publishing.
+The screenshot below is captured from the real Meowus app UI and sanitized with demo account names before publishing.
 
-![Meowus chat workspace with browser panel](public/screenshots/chat-workspace-browser-en.png)
+![Meowus chat workspace with browser panel](public/screenshots/chat-workspace-browser.png)
 
 ## Feature Labels
 

@@ -36,9 +36,9 @@ cd meowus
 
 ## 介面預覽
 
-下方截圖來自真實英文版 app UI，發布前已替換成 demo 帳號名稱，避免顯示真實站點資料。
+下方截圖來自真實 Meowus app UI，發布前已替換成 demo 帳號名稱，避免顯示真實站點資料。
 
-![Meowus chat workspace with browser panel](public/screenshots/chat-workspace-browser-en.png)
+![Meowus chat workspace with browser panel](public/screenshots/chat-workspace-browser.png)
 
 ## 套件與功能標籤
 
