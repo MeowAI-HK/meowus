@@ -72,7 +72,7 @@ export function AgentChatPanel({
   });
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const { data: settings, mutate: reloadSettings } = useSWR<SettingsResponse>("/api/settings/ai", swrFetcher, { refreshInterval: 5000 });
-  const { data: account } = useSWR<AccountState>("/api/smepost/account", swrFetcher, { refreshInterval: 10000 });
+  const { data: account } = useSWR<AccountState>("/api/smepost/account", swrFetcher, { refreshInterval: 40_000 });
   const chatUrl = threadId ? `/api/agent/chat?threadId=${encodeURIComponent(threadId)}` : null;
   const { data, mutate, isLoading } = useSWR<ChatHistoryResponse>(chatUrl, swrFetcher);
   const { data: schedules = [], mutate: mutateSchedules } = useSWR<ScheduleRecord[]>("/api/schedules", swrFetcher, { refreshInterval: 5000 });

@@ -255,6 +255,7 @@
   "smepostLoginExpired": "The login link expired. Please start again.",
   "smepostLoginFailed": "SMEPost login failed",
   "smepostLoginStartFailed": "Failed to start SMEPost login",
+  "smepostLoginReconnectRequired": "This login session was already used. Please connect again.",
   "smepostAccountLoadFailed": "Failed to load SMEPost account",
   "smepostDeviceCode": "Device code",
   "smepostPlan": "Plan",

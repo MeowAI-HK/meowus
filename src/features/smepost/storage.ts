@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { dataRoot } from "@/lib/paths";
+import { clearRunnerStatusCache } from "./runner-status-cache";
 
 export type SMEPostAuthState = {
   baseUrl: string;
@@ -51,5 +52,6 @@ export async function writeSMEPostAuth(state: SMEPostAuthState) {
 }
 
 export async function clearSMEPostAuth() {
+  clearRunnerStatusCache();
   await fs.rm(authPath(), { force: true });
 }

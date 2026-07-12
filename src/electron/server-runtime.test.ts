@@ -17,6 +17,7 @@ describe("Electron server runtime", () => {
     expect(runtime.env.SOCIAL_AUTO_POST_DATA_DIR).toBe(runtime.appDataDir);
     expect(runtime.env.SMEPOST_ELECTRON).toBe("1");
     expect(runtime.env.ELECTRON_RUN_AS_NODE).toBe("1");
+    expect(runtime.env.SMEPOST_API_BASE_URL).toBe("https://smepost.io");
   });
 
   it("prefers portable workspace web-data when the packaged app is launched beside a populated repo", () => {

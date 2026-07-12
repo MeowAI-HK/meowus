@@ -113,6 +113,7 @@ async function startServer() {
       APP_DATA_DIR: app.getPath("userData"),
       SOCIAL_AUTO_POST_DATA_DIR: dataDir,
       SOCIAL_AUTO_POST_DB_URL: `file:${path.join(dataDir, "social-auto-post.db")}`,
+      SMEPOST_API_BASE_URL: process.env.SMEPOST_API_BASE_URL || "https://smepost.io",
       SMEPOST_ELECTRON: "1",
       ELECTRON_RUN_AS_NODE: "1",
       HOSTNAME: host,

@@ -39,6 +39,7 @@ export function createElectronServerRuntime(input: {
     ...(input.baseEnv ?? process.env),
     APP_DATA_DIR: appDataDir,
     SOCIAL_AUTO_POST_DATA_DIR: appDataDir,
+    SMEPOST_API_BASE_URL: (input.baseEnv ?? process.env).SMEPOST_API_BASE_URL || "https://smepost.io",
     SMEPOST_ELECTRON: "1",
     ELECTRON_RUN_AS_NODE: "1",
     HOSTNAME: host,

@@ -122,7 +122,7 @@ function ConsoleLayoutShell({ children }: { children: React.ReactNode }) {
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const { data: sites = [] } = useSWR<SiteRecord[]>("/api/sites", swrFetcher, { refreshInterval: 5000 });
   const { data: threads = [] } = useSWR<AgentChatThreadRecord[]>(`/api/agent/chat/threads?limit=${threadLimit}`, swrFetcher, { refreshInterval: 5000 });
-  const { data: account, mutate: reloadAccount } = useSWR<AccountState>("/api/smepost/account", swrFetcher, { refreshInterval: 10000 });
+  const { data: account, mutate: reloadAccount } = useSWR<AccountState>("/api/smepost/account", swrFetcher, { refreshInterval: 40_000 });
   const visibleSites = sites.slice(0, 5);
 
   const primaryMenuItems = useMemo(

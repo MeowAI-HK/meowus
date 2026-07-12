@@ -46,7 +46,7 @@ export default function BrandPromptSettingsClient({ tab }: { tab: "brand" | "pro
   const { data: account } = useSWR<AccountResponse>(
     tab === "brand" ? "/api/smepost/account" : null,
     swrFetcher,
-    { refreshInterval: 10000 },
+    { refreshInterval: 40_000 },
   );
   const [brand, setBrand] = useState<BrandResponse | null>(null);
   const [systemPrompt, setSystemPrompt] = useState("");

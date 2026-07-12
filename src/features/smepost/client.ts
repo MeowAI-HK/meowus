@@ -1,6 +1,7 @@
 import { AppError } from "@/lib/app-errors";
 import type { SMEPostAuthState } from "./storage";
 import { SMEPOST_DEFAULT_BASE_URL, SMEPOST_DEFAULT_DEVICE_NAME } from "./constants";
+import { getCachedRunnerStatus } from "./runner-status-cache";
 
 export type SMEPostDeviceStartResponse = {
   loginUrl: string;
@@ -61,6 +62,30 @@ export function smepostBaseUrl(input?: string | null) {
   return (input || process.env.SMEPOST_API_BASE_URL || SMEPOST_DEFAULT_BASE_URL).replace(/\/$/, "");
 }
 
+export function smepostCloudErrorCode(error: unknown): string | undefined {
+  if (!(error instanceof AppError)) {
+    return undefined;
+  }
+  const details = error.details;
+  if (details && typeof details === "object" && "error" in details) {
+    const code = (details as { error?: unknown }).error;
+    return typeof code === "string" ? code : undefined;
+  }
+  if (typeof error.message === "string" && /^[A-Z][A-Z0-9_]+$/.test(error.message)) {
+    return error.message;
+  }
+  return undefined;
+}
+
+export function isIdempotentRegisterConflict(error: unknown): boolean {
+  const code = smepostCloudErrorCode(error);
+  return (
+    code === "DEVICE_SESSION_ALREADY_USED"
+    || code === "DEVICE_SESSION_NOT_FOUND"
+    || code === "DEVICE_SESSION_NOT_READY"
+  );
+}
+
 async function readJsonResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
   const json = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -117,9 +142,11 @@ export function createSMEPostClient(): SMEPostClient {
     },
 
     async getRunnerStatus(auth: SMEPostAuthState) {
-      return smepostClient.callCommand<SMEPostRunnerStatus>(
-        auth,
-        `/api/auto-post/runners/${encodeURIComponent(auth.runnerId)}/status`,
+      return getCachedRunnerStatus(auth.runnerId, () =>
+        smepostClient.callCommand<SMEPostRunnerStatus>(
+          auth,
+          `/api/auto-post/runners/${encodeURIComponent(auth.runnerId)}/status`,
+        ),
       );
     },
 

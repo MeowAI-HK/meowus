@@ -255,6 +255,7 @@
   "smepostLoginExpired": "登入連結已過期，請重新開始。",
   "smepostLoginFailed": "SMEPost 登入失敗",
   "smepostLoginStartFailed": "開始 SMEPost 登入失敗",
+  "smepostLoginReconnectRequired": "此登入工作階段已被使用。請重新連接。",
   "smepostAccountLoadFailed": "載入 SMEPost 帳戶失敗",
   "smepostDeviceCode": "裝置代碼",
   "smepostPlan": "方案",

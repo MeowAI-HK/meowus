@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, ExternalLink, Loader2, LogOut, Monitor, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
-import { apiErrorTranslationKey, apiGet, apiPost } from "@/lib/api-client";
+import { ApiClientError, apiErrorTranslationKey, apiGet, apiPost } from "@/lib/api-client";
 import type { TranslationKey } from "@/lib/locale-resources";
 import { SMEPOST_DEFAULT_DEVICE_NAME } from "@/features/smepost/constants";
 
@@ -17,6 +17,7 @@ type AccountOrg = {
 type AccountState = {
   connected: boolean;
   error?: string;
+  warning?: string;
   auth?: {
     baseUrl: string;
     runnerId: string;
@@ -34,6 +35,36 @@ type DeviceStart = {
   loginUrl: string;
   expiresAt: string;
 };
+
+const CONSUMED_SESSION_CODES = new Set([
+  "DEVICE_SESSION_ALREADY_USED",
+  "DEVICE_SESSION_NOT_FOUND",
+  "DEVICE_SESSION_NOT_READY",
+]);
+
+function cloudErrorDetail(error: unknown): string | undefined {
+  if (error instanceof ApiClientError) {
+    const details = error.details;
+    if (details && typeof details === "object" && "error" in details) {
+      const code = (details as { error?: unknown }).error;
+      if (typeof code === "string") return code;
+    }
+    if (error.message && /^[A-Z][A-Z0-9_]+$/.test(error.message)) {
+      return error.message;
+    }
+  }
+  return undefined;
+}
+
+function isReconnectRequired(error: unknown): boolean {
+  if (!(error instanceof ApiClientError)) return false;
+  const details = error.details;
+  if (details && typeof details === "object" && "reconnectRequired" in details) {
+    return Boolean((details as { reconnectRequired?: unknown }).reconnectRequired);
+  }
+  const code = cloudErrorDetail(error);
+  return Boolean(code && CONSUMED_SESSION_CODES.has(code));
+}
 
 const unlockRows = [
   ["smepostUnlockAgent", "smepostUnlockAgentFree", "smepostUnlockAgentPaid"],
@@ -62,6 +93,9 @@ export default function SMEPostAccountPage() {
       setAccount(next);
       if (next.error) {
         setNotice(t("error_SMEPOST_SESSION_EXPIRED"));
+      } else if (next.warning) {
+        // Keep connected; raw cloud status codes stay in server logs / warning field.
+        setNotice(t("smepostConnected"));
       }
     } catch (error) {
       setErrorNotice(error, "smepostAccountLoadFailed");
@@ -80,8 +114,14 @@ export default function SMEPostAccountPage() {
     }
 
     let cancelled = false;
+    let inFlight = false;
     window.queueMicrotask(() => setIsPolling(true));
-    const interval = window.setInterval(async () => {
+
+    const pollOnce = async () => {
+      if (cancelled || inFlight) {
+        return;
+      }
+      inFlight = true;
       try {
         const result = await apiGet<{ status: string; org?: AccountOrg }>(
           `/api/smepost/device/poll?pollingToken=${encodeURIComponent(loginSession.pollingToken)}&baseUrl=${encodeURIComponent(loginSession.baseUrl)}&deviceName=${encodeURIComponent(SMEPOST_DEFAULT_DEVICE_NAME)}`,
@@ -91,21 +131,46 @@ export default function SMEPostAccountPage() {
         if (result.status === "registered") {
           window.clearInterval(interval);
           setLoginSession(null);
+          setIsPolling(false);
           setNotice(t("smepostLoginConnected"));
           await refreshAccount();
         } else if (result.status === "expired") {
           window.clearInterval(interval);
+          setIsPolling(false);
           setNotice(t("smepostLoginExpired"));
         }
       } catch (error) {
         if (cancelled) return;
+        // A racing poll may fail after a sibling request already wrote auth.
+        try {
+          const next = await apiGet<AccountState>("/api/smepost/account");
+          if (next.connected) {
+            window.clearInterval(interval);
+            setLoginSession(null);
+            setIsPolling(false);
+            setAccount(next);
+            setNotice(t("smepostLoginConnected"));
+            return;
+          }
+        } catch {
+          // Fall through to the original poll error.
+        }
         window.clearInterval(interval);
+        setIsPolling(false);
+        if (isReconnectRequired(error)) {
+          setLoginSession(null);
+          setNotice(t("smepostLoginReconnectRequired"));
+          return;
+        }
         setErrorNotice(error, "smepostLoginFailed");
       } finally {
-        if (!cancelled) {
-          setIsPolling(false);
-        }
+        inFlight = false;
       }
+    };
+
+    void pollOnce();
+    const interval = window.setInterval(() => {
+      void pollOnce();
     }, 2500);
 
     return () => {

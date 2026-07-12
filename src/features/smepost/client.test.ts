@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createSMEPostClient, smepostBaseUrl } from "./client";
+import { AppError } from "@/lib/app-errors";
+import {
+  createSMEPostClient,
+  isIdempotentRegisterConflict,
+  smepostBaseUrl,
+  smepostCloudErrorCode,
+} from "./client";
+import { SMEPOST_PRODUCTION_BASE_URL } from "./constants";
 
 describe("SMEPost client", () => {
   afterEach(() => {
@@ -8,6 +15,10 @@ describe("SMEPost client", () => {
 
   it("normalizes base URLs", () => {
     expect(smepostBaseUrl("https://app.smepost.com/")).toBe("https://app.smepost.com");
+  });
+
+  it("defaults to the production SMEPost base URL when no override is provided", () => {
+    expect(SMEPOST_PRODUCTION_BASE_URL).toBe("https://smepost.io");
   });
 
   it("starts device login with a typed response", async () => {
@@ -52,5 +63,31 @@ describe("SMEPost client", () => {
       pollingToken: "polling-token",
       deviceName: "Desktop",
     });
+  });
+
+  it("treats already-used, missing, and not-ready device sessions as idempotent register conflicts", () => {
+    expect(isIdempotentRegisterConflict(new AppError("SMEPOST_API_FAILED", {
+      message: "DEVICE_SESSION_ALREADY_USED",
+      details: { error: "DEVICE_SESSION_ALREADY_USED" },
+    }))).toBe(true);
+    expect(isIdempotentRegisterConflict(new AppError("SMEPOST_API_FAILED", {
+      message: "DEVICE_SESSION_NOT_FOUND",
+      details: { error: "DEVICE_SESSION_NOT_FOUND" },
+    }))).toBe(true);
+    expect(isIdempotentRegisterConflict(new AppError("SMEPOST_API_FAILED", {
+      message: "DEVICE_SESSION_NOT_READY",
+      details: { error: "DEVICE_SESSION_NOT_READY" },
+    }))).toBe(true);
+    expect(isIdempotentRegisterConflict(new AppError("SMEPOST_API_FAILED", {
+      message: "AUTO_POST_INVALID_REQUEST",
+      details: { error: "AUTO_POST_INVALID_REQUEST" },
+    }))).toBe(false);
+  });
+
+  it("extracts cloud error codes from AppError details", () => {
+    expect(smepostCloudErrorCode(new AppError("SMEPOST_API_FAILED", {
+      message: "DEVICE_SESSION_ALREADY_USED",
+      details: { error: "DEVICE_SESSION_ALREADY_USED" },
+    }))).toBe("DEVICE_SESSION_ALREADY_USED");
   });
 });
