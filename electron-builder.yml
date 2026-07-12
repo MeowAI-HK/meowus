@@ -1,0 +1,19 @@
+appId: ai.smepost.meowus
+productName: Meowus
+directories:
+  output: dist-electron
+files:
+  - electron/*.cjs
+  - build/**/*
+  - package.json
+  - .next/standalone/**/*
+  - .next/static/**/*
+  - public/**/*
+asarUnpack:
+  - .next/standalone/**/*
+extraMetadata:
+  main: electron/main.cjs
+win:
+  icon: build/icon.ico
+  target:
+    - dir
