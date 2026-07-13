@@ -38,6 +38,7 @@ describe("Electron and web branding", () => {
     const electronBuilderConfig = readProjectFile("electron-builder.yml");
     expect(electronBuilderConfig).toContain("appId: io.smepost.meowus");
     expect(electronBuilderConfig).toContain("- dmg");
+    expect(electronBuilderConfig).toContain("- nsis");
     expect(electronBuilderConfig).toContain("hardenedRuntime: true");
     expect(electronBuilderConfig).not.toContain("identity: null");
 
@@ -45,6 +46,7 @@ describe("Electron and web branding", () => {
     expect(packageJson).toContain('"electron:build:win"');
     expect(packageJson).toContain('"electron:build:mac"');
     expect(packageJson).toContain('"electron:build:store"');
+    expect(packageJson).toContain('"electron:build:win": "pnpm build && tsx scripts/prepare-electron-bundle.ts && electron-builder --win --publish never"');
 
     const storeBuild = readProjectFile("scripts/build-store-package.ts");
     expect(storeBuild).toContain('"MS_STORE_IDENTITY_NAME"');

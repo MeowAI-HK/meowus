@@ -14,6 +14,24 @@ Use it as a local Agent OS for social media operations: connect multiple logged-
 
 [Traditional Chinese Taiwan README](README.zh-TW.md)
 
+## Download and Run Meowus
+
+Download the latest version from [GitHub Releases](https://github.com/MeowAI-HK/meowus/releases). Official releases use version tags such as `v0.1.0`.
+
+### Windows
+
+- **Installer (`Meowus Setup <version>.exe`)**: Download and run the installer, then open Meowus from the Start menu.
+- **Portable ZIP (`Meowus-Windows-x64.zip`)**: Extract the entire ZIP to a permanent folder, then open `Meowus.exe` inside `win-unpacked`. Do not move the executable out of that folder because it needs the adjacent `resources` files.
+- GitHub Windows downloads are intentionally **unsigned**. Microsoft SmartScreen may display a warning; choose **More info** then **Run anyway** only if you downloaded the file from this repository's official GitHub Release.
+
+### macOS
+
+1. Download the `.dmg` for your Mac.
+2. Open it and drag **Meowus** to **Applications**.
+3. Open Meowus from Applications.
+
+Official macOS releases are signed with Developer ID and notarized by Apple. Your local database, browser profiles, uploaded assets, and generated artifacts remain on your computer when you update the app.
+
 ## Repository
 
 ```bash

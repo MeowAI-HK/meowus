@@ -28,3 +28,4 @@ win:
   icon: build/icon.ico
   target:
     - dir
+    - nsis
