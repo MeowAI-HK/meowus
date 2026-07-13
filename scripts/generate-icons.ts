@@ -60,7 +60,7 @@ async function main() {
   const icon = buildIco(images);
   fs.writeFileSync(faviconPath, icon);
   fs.writeFileSync(electronIcoPath, icon);
-  fs.writeFileSync(electronPngPath, await pngBuffer(256));
+  fs.writeFileSync(electronPngPath, await pngBuffer(512));
   console.log(`Generated icons from ${path.relative(root, sourceLogoPath)}.`);
 }
 
