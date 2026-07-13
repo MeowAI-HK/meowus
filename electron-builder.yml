@@ -1,4 +1,4 @@
-appId: ai.smepost.meowus
+appId: io.smepost.meowus
 productName: Meowus
 directories:
   output: dist-electron
@@ -13,6 +13,17 @@ asarUnpack:
   - .next/standalone/**/*
 extraMetadata:
   main: electron/main.cjs
+mac:
+  icon: build/icon.png
+  category: public.app-category.productivity
+  target:
+    - dmg
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.inherit.plist
+  # Developer ID signing is enabled by CSC_LINK / CSC_KEY_PASSWORD when supplied.
+  # APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD and APPLE_TEAM_ID activate notarization.
+  # Do not set a null signing identity: it would disable signed release builds.
 win:
   icon: build/icon.ico
   target:

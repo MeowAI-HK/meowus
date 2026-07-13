@@ -1,0 +1,155 @@
+name: Desktop Build
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  windows-github:
+    name: Windows unsigned GitHub artifact
+    runs-on: windows-latest
+    env:
+      # GitHub downloads deliberately remain unsigned. Do not add WIN_CSC_* secrets.
+      CSC_IDENTITY_AUTO_DISCOVERY: false
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium
+      - name: Build unsigned Windows app
+        run: pnpm electron:build:win
+      - name: Create GitHub download archive
+        shell: pwsh
+        run: Compress-Archive -Path dist-electron/win-unpacked -DestinationPath Meowus-Windows-x64.zip
+      - name: Upload GitHub artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meowus-GitHub-Windows-x64
+          path: Meowus-Windows-x64.zip
+          retention-days: 90
+
+  macos-github:
+    name: macOS Developer ID build
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium
+      - name: Check Apple signing configuration
+        shell: bash
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          values=("$CSC_LINK" "$CSC_KEY_PASSWORD" "$APPLE_ID" "$APPLE_APP_SPECIFIC_PASSWORD" "$APPLE_TEAM_ID")
+          present=0
+          for value in "${values[@]}"; do
+            if [ -n "$value" ]; then present=$((present + 1)); fi
+          done
+          if [ "$present" -ne 0 ] && [ "$present" -ne 5 ]; then
+            echo "Apple signing is partially configured. Set CSC_LINK, CSC_KEY_PASSWORD, APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID together."
+            exit 1
+          fi
+          if [ "$present" -eq 0 ]; then
+            echo "Apple secrets are absent; creating an unsigned development DMG. GitHub release signing is enabled automatically once all five secrets are configured."
+          else
+            echo "Apple Developer ID signing and notarization are enabled."
+          fi
+      - name: Build macOS DMG
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: pnpm electron:build:mac
+      - name: Upload GitHub artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meowus-GitHub-macOS-arm64
+          path: dist-electron/*.dmg
+          if-no-files-found: error
+          retention-days: 90
+
+  microsoft-store:
+    name: Microsoft Store AppX package
+    if: ${{ vars.MS_STORE_IDENTITY_NAME != '' && vars.MS_STORE_PUBLISHER != '' }}
+    runs-on: windows-latest
+    env:
+      MS_STORE_IDENTITY_NAME: ${{ vars.MS_STORE_IDENTITY_NAME }}
+      MS_STORE_PUBLISHER: ${{ vars.MS_STORE_PUBLISHER }}
+      CSC_IDENTITY_AUTO_DISCOVERY: false
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium
+      - name: Build Store package
+        run: pnpm electron:build:store
+      - name: Upload Store artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meowus-Microsoft-Store-AppX
+          path: dist-electron/*.appx
+          if-no-files-found: error
+          retention-days: 90
+
+  publish:
+    name: Publish GitHub Release
+    needs: [windows-github, macos-github]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download GitHub release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          pattern: Meowus-GitHub-*
+          merge-multiple: true
+      - name: Create pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-${{ github.run_number }}
+          name: Desktop Build #${{ github.run_number }}
+          prerelease: true
+          generate_release_notes: true
+          files: release-assets/*

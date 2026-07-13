@@ -33,4 +33,26 @@ describe("Electron and web branding", () => {
     const electronMain = readProjectFile("electron/main.cjs");
     expect(electronMain).toContain("Menu.setApplicationMenu(null)");
   });
+
+  it("keeps release signing scoped to macOS and preserves legacy local data", () => {
+    const electronBuilderConfig = readProjectFile("electron-builder.yml");
+    expect(electronBuilderConfig).toContain("appId: io.smepost.meowus");
+    expect(electronBuilderConfig).toContain("- dmg");
+    expect(electronBuilderConfig).toContain("hardenedRuntime: true");
+    expect(electronBuilderConfig).not.toContain("identity: null");
+
+    const packageJson = readProjectFile("package.json");
+    expect(packageJson).toContain('"electron:build:win"');
+    expect(packageJson).toContain('"electron:build:mac"');
+    expect(packageJson).toContain('"electron:build:store"');
+
+    const storeBuild = readProjectFile("scripts/build-store-package.ts");
+    expect(storeBuild).toContain('"MS_STORE_IDENTITY_NAME"');
+    expect(storeBuild).toContain('"MS_STORE_PUBLISHER"');
+    expect(storeBuild).toContain('"appx"');
+    expect(storeBuild).toContain('CSC_IDENTITY_AUTO_DISCOVERY: "false"');
+
+    const electronMain = readProjectFile("electron/main.cjs");
+    expect(electronMain).toContain('LEGACY_USER_DATA_FOLDER = "SMEPost Auto Post"');
+  });
 });
