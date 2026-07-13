@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
@@ -15,17 +15,26 @@ function copyIntoStandalone(source: string, target: string) {
   cpSync(source, target, { recursive: true, dereference: true });
 }
 
-function materializeStandaloneNodeModuleLinks() {
-  const nextNodeModulesDir = path.join(standaloneRoot, ".next", "node_modules");
-  if (!existsSync(nextNodeModulesDir)) return;
+function materializeStandaloneLinks() {
+  const directories = [standaloneRoot];
 
-  for (const entry of readdirSync(nextNodeModulesDir, { withFileTypes: true })) {
-    if (!entry.isSymbolicLink()) continue;
+  while (directories.length > 0) {
+    const currentDir = directories.pop();
+    if (!currentDir) continue;
 
-    const linkPath = path.join(nextNodeModulesDir, entry.name);
-    const source = realpathSync(linkPath);
-    rmSync(linkPath, { recursive: true, force: true });
-    cpSync(source, linkPath, { recursive: true, dereference: true });
+    for (const entry of readdirSync(currentDir, { withFileTypes: true })) {
+      const entryPath = path.join(currentDir, entry.name);
+
+      if (entry.isSymbolicLink()) {
+        const source = realpathSync(entryPath);
+        rmSync(entryPath, { recursive: true, force: true });
+        cpSync(source, entryPath, { recursive: true, dereference: true });
+        if (statSync(entryPath).isDirectory()) directories.push(entryPath);
+        continue;
+      }
+
+      if (entry.isDirectory()) directories.push(entryPath);
+    }
   }
 }
 
@@ -84,7 +93,7 @@ copyIntoStandalone(path.join(root, "node_modules", "playwright-core"), path.join
 copyIntoStandalone(path.join(root, "node_modules", ".pnpm", "playwright@1.60.0"), path.join(standaloneRoot, "node_modules", ".pnpm", "playwright@1.60.0"));
 copyIntoStandalone(path.join(root, "node_modules", ".pnpm", "playwright-core@1.59.1"), path.join(standaloneRoot, "node_modules", ".pnpm", "playwright-core@1.59.1"));
 copyIntoStandalone(path.join(root, "node_modules", ".pnpm", "playwright-core@1.60.0"), path.join(standaloneRoot, "node_modules", ".pnpm", "playwright-core@1.60.0"));
-materializeStandaloneNodeModuleLinks();
+materializeStandaloneLinks();
 ensureExternalPackageShims();
 
 for (const runtimeFolder of ["web-data", ".playwright-cli", "playwright-report", "test-results"]) {
