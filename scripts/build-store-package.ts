@@ -23,6 +23,8 @@ const result = spawnSync(
     "electron-builder",
     "--win",
     "appx",
+    "--publish",
+    "never",
     `--config.appx.identityName=${process.env.MS_STORE_IDENTITY_NAME}`,
     `--config.appx.publisher=${process.env.MS_STORE_PUBLISHER}`,
     "--config.appx.publisherDisplayName=Meow AI Limited",
